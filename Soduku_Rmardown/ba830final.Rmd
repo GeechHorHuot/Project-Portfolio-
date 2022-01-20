@@ -1,0 +1,307 @@
+---
+title: "The Effect of Solving Sudoku when Listening to Music"
+author: "Aleks Lazowski, Yuhan Wang, Eunjin Jeong, Geech Hor Hout, Niming Wang"
+date: "12/8/2021"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+## Introduction
+
+In the digital age today, people are consumed with social media and technology. Human attention span in this generation is getting shorter as time goes on. The article, 'You now have a shorter attention span than a goldfish' inspired us to design this experiment. Based on the study done by Microsoft Corp, people now generally lose concentration after eight seconds, highlighting the effects of an increasingly ‘digitalized’ lifestyle on the brain (Mcspadden, 2015). Therefore, for this experiment, we decided to test people's productivity and attention span in completing a given task- Sudoku. This was an interesting topic to explore because there are definitely various degrees to how much people can focus especially when trying to multitask and the time taken to complete it. 
+
+When conducting this experiment, we came up with the idea of giving the participant a medium level sudoku to challenge some brain activity for our selected participants. For the treatment group, we created a playlist as an external factor to influence their performance on solving the sudoku. Our outcome is the measure of the time spent to complete the sudoku. Plenty of research has shown that people will take longer to complete a task if there are distractions. Research from a team of psychological scientists from George Mason University has found that interruptions don’t just take up time, they also degrade the overall quality of people’s work as well (Draheim, C., Hicks, K. L., & Engle, R. W. (2016)). Our assumption for this experiment is that people who have been assigned to a sudoku with a playlist will take more time to complete.  
+
+There are 66 participants for this experiment. One of the challenges to this experiment is that it contradicts the idea of multitasking. Some people can actually do many things at the same time while others will take longer and are not productive having to deal with multiple tasks. One other thing is the participant’s familiarity with sudoku and their ability to solve it. To minimize selection biases, we broke down the experiment process into two trials. After the first trial, we sorted the participants based on the time they took to complete the game then randomize them into treatment and control group to avoid any selection bias. For the second trial, the participants from both groups were given a survey to collect their data and the overall experience. 
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r, results='hide', message=FALSE, warning=FALSE}
+library(knitr)
+library(modelsummary)
+library(ggplot2)
+library(data.table)
+library(readr)
+library(lfe)
+library(dplyr)
+library(fixest)
+library(broom)
+library(lubridate)
+library(kableExtra)
+library(pwr)
+library(stargazer)
+library(flextable)
+
+#data entering
+data<-fread("830project.csv", header=TRUE)
+
+#data cleaning
+
+#convert Time as numeric variable based on seconds
+data[, 'Time' := as.numeric(hms(Time))]
+
+```
+
+
+
+## Method
+
+### *Participants*
+
+To recruit participants, the team reached out to friends, classmates at BU and family members. There are 66 finalized participants where 37 identify as female and 29 identify as male. 
+
+### *Randomization*
+
+To fairly assign participants to the treatment and control group, we picked a block randomization method based on the time collected from the first trial to place them into the treatment and control group. For block randomization, we want to make sure that the list is sorted in ascending order and the participants are selected in pairs to randomize from the top. From the list of the participants, we assigned a sequence of numbers to the participant in the odd rows. Then, place an opposite number to the sequence of the odd rows in the even rows. This will give the 50-50 chances to the randomization process and eliminate any biases with participants' sudoku levels.
+
+
+```{r}
+##block randomization
+##The result of code is already included in the dataset, so we commented it out.
+
+##set seed
+#set.seed(830)
+
+##generating random values
+#random_value <- sample(x=c(0,1), size=33, replace=TRUE, prob = c(0.5,0.5))
+#random_reverse <- c(1)-c(random_value)
+
+##creating odd column
+#row_odd <- seq_len(nrow(data)) %% 2
+#data[,'row_odd':=row_odd]
+##creating new column for randomization - #1:treatment, 0:control
+#data[,'random':=0]
+#data$random[which(data$row_odd=="1")] <-random_value
+#data$random[which(data$row_odd=="0")] <-random_reverse
+```
+
+
+### *Pilot Experiment*
+
+For the experiment, we decided to use sudoku.com as our test website. The team members tried among ourselves to decide the difficulty level of the sudoku for testing. We decided to use the medium level for the testing due to having limited project time and shorter trials periods. We also thought that medium level would be good to encourage some thinking and focus from our participants but not too hard that they would give up. The average time to finish the medium level sudoku in our group is around 11 minutes, and the range of time is from 7 minutes to 14 minutes. After the first test, we did it again while listening to music. We did these two tests to know the approximate times for the result, so that we can design the survey and answer any questions that may arise later.
+
+
+### *Procedure*
+
+For the first trial, we wanted to see our participants' level of sudoku in order to eliminate selection bias when randomization. We sent out the link to the sudoku site to the participants then collected the time completed for that round. The participants’ result consisted of people with different abilities of Sudoku, as expected. After collecting the result, we sorted the list of people based on the time in ascending order to perform block randomization. We, then, randomly assign paired up participants from the top of the list in the treatment and control group. We first selected participants in the odd rows then randomly assigned them number 1 and 0 representing the treatment and control group. Next, we replaced the opposite numbers sequence to the even rows so the participants who have similar time are evenly assigned to both groups.
+
+For the second trial, we created two surveys for treatment and control group. The survey for the treatment group has a link to a music playlist that requires them to listen to while solving the sudoku whereas the survey for the control group has no playlist. The survey questionnaire includes gender, familiarity to the game, how often do the participants play it?, preferred music genres, other brain games that they play...etc. We sent out the survey to the assigned participants according to their groups and collected the data in an excel sheet. For each variable, we assigned numerical values to the participant’s answers to make regression analysis easier. For example, a range of 0-4 to how often a participant plays sudoku, 0 means never and 4 means all the time. Since the experiment consists of two trials, it took over two weeks to complete it. 
+
+The last step is to run regression analysis in R and do hypothesis testing to see if it is statistically significant or not. 
+
+
+```{r}
+question <- data.table(Number=c('Q1','Q2','Q3','Q4'), Questions = 
+                         c('Are you familiar with other brain games? (yes or no)', 
+                           'Do you normally listen to music while working? (yes or no)', 
+                           'What is your favorite genre of music? 
+                           (rock, pop, rap, rnb, lowfi, edm, classical, instrumental)',
+                           'How often do you play sudoku? (never, rarely, often, always)'))
+question %>% kable(align = "c")
+```
+
+
+
+### *Experiment Randomization Check*
+
+```{r}
+#randomization check
+pr <- prop.test(data[Treatment != 0, .N], data[,.N], 0.5)
+prtable <- data.frame(pr$p.value, pr$conf.int)
+colnames(prtable)[1] <- 'P-value'
+colnames(prtable)[2] <- 'Confidence interval'
+prtable %>% kable(align='c')
+```
+
+
+Using the prop test we see that our 95% confidence intervals are .38 to .61.  This shows that 50% of our randomization lands in between the confidence interval and confirms our experiment was randomized correctly. 
+
+We also did a randomization check based on our dataset. As you know, the null hypothesis for this proper test is that our randomizer is correct. We take a look at the p-value -- 1, which is larger than 0.05. And the 0.5 is located in the 95 percent confidence interval.Hence we fail to reject the null hypothesis, that is, our randomization process is indeed correct.
+
+
+
+## Data Analysis
+
+With our dataset collected from the experiment, we ran regressions to test several of our hypotheses to see if there is any significance based on our covariates and outcome.
+
+### *Average Treatment Effect*
+
+The first regression we wanted to run is a simple regression to analyze: the effect of being in the treatment group (listening to music) on the completion time of the sudoku. We ran the following regression and found these results:
+
+
+```{r}
+reg1 <- feols(Time ~ Treatment, data=data, se='hetero')
+reg1 %>% tidy() %>% kable(col.names = c("Predictor", "Coefficient", "SE", "T-Stat",
+"P-Value"), digits = c(0, 3, 3, 3, 3), align = 'c')
+```
+
+
+The interpretation of this regression is that, on average, the estimated ATE of treatment is 122 seconds longer compared to those in the control group (no music). This would indicate a negative relationship between listening to music and productivity. But our p-value was 1.14 which indicates this regression is not statistically significant.  Because of this, we are unable to reject the null hypothesis. This means that listening to music has no different effect on control or treatment groups.  However, this simple regression might not be our best model to analyze this variable. 
+
+
+### *Covariates*
+
+Before completing this regression, we needed to identify the good and bad covariates of our experiment.  We implement covariates in the regression because they identify different characteristics of the participants in this experiment. We have 5 covariates in our experiment: gender, sudoku frequency, brain game familiarity, genre, and whether participants listening to music while working('music'). We considered familiarity and music as good covariates. It's because they are not affected by the treatment and are predetermined before the experiment. Frequency might be defined as good covariate, but we decided to exclude it because we already conducted first trial before we send out the survey. 
+
+```{r}
+reg2 <- feols(Time ~ Treatment + Music +Familiarity , data=data, se='hetero')
+reg2 %>% tidy() %>% kable(col.names = c("Predictor", "Coefficient", "SE", "T-Stat",
+"P-Value"), digits = c(0, 3, 3, 3, 3), align = 'c')
+```
+
+The regression results show that estimate of average treatment effect with music and familiarity is 126 seconds. The result is not statistically significant as the p-value is higher than .05. The covariates did not change the estimate of the treatment very much, but did increase standard error by a small percentage. Since it didn't reduce precision, we can't confirm these are good covariates. We decided not to control for covariates for our next regressions.
+
+
+
+### *Heterogeneous Treatment Effect*
+
+```{r}
+reg3 <- feols(Time ~ Treatment*Music, data=data, se='hetero')
+reg3 %>% tidy() %>% kable(col.names = c("Predictor", "Coefficient", "SE", "T-Stat",
+"P-Value"), digits = c(0, 3, 3, 3, 3), align = 'c')
+```
+
+We ran a regression to test whether the effects of listening to music varies if the person normally listened to music while working. We derived conditional average treatment effect from our regression results. For those who listen to music normally while working, the estimate of CATE is 141. For those who do not listen to music normally while working, the estimate of CATE is 112. On average, treatment effect was higher when we conditioning on music listeners. However, the result is not statistically significant because p value is high. Therefore, we can’t conclude that there is any difference between these groups.
+
+
+### *Heterogeneous Treatment Effect on Subset*
+
+```{r}
+reg4 <- feols(Time ~ Treatment*Music, data=data[Frequency==0 ], se='hetero')
+reg4 %>% tidy() %>% kable(col.names = c("Predictor", "Coefficient", "SE", "T-Stat",
+"P-Value"), digits = c(0, 3, 3, 3, 3), align = 'c')
+```
+
+We subsetted the dataset on those who never played sudoku before and tested regression conditioning on music. Among people who never played sudoku before, for those who normally listen to music while working, the estimate of CATE is -730. On the other hand, for those who do not listen to music while working, the estimate of CATE is 65. More importantly, we got a p-value less than 0.01, so the result is statistically significant. Therefore, we can reject the null hypothesis and we can say there is a difference between these groups. New players who listen to music when working took faster to finish the sudoku with music. There might be potential validation issue because the sample size of subset is 18, which is less than 30.
+
+
+### *Gender*
+
+```{r}
+reg5 <- feols(Time ~ Treatment, data=data[Gender == 0], se='hetero')
+reg6 <- feols(Time ~ Treatment, data=data[Gender == 1], se='hetero')
+reg5  %>% tidy() %>% kable(col.names = c("Predictor", "Coefficient", "SE", "T-Stat",
+"P-Value"), digits = c(0, 3, 3, 3, 3), align = 'c')
+reg6  %>% tidy() %>% kable(col.names = c("Predictor", "Coefficient", "SE", "T-Stat",
+"P-Value"), digits = c(0, 3, 3, 3, 3), align = 'c')
+```
+
+While we separate the data to different genders and to see how music influences their result, we got the result that both females and males get more time finishing the sudoku while listening to music on average. However, the result is not significant so the music is not making difference on time. 
+
+```{r}
+reg7 <-feols(Time ~ Gender, data=data, se='hetero')
+reg7  %>% tidy() %>% kable(col.names = c("Predictor", "Coefficient", "SE", "T-Stat",
+"P-Value"), digits = c(0, 3, 3, 3, 3), align = 'c')
+```
+
+To further analyze the effect of gender, we conducted regression of gender on time. Comparing results from females and males, we can see that females seem to solve the sudoku in less time compared with males, but both results are not statistically significant. 
+
+
+### *Sudoku Frequency*
+
+
+```{r}
+reg_fre0 <- feols(Time ~ Treatment, data=data[Frequency == 0], se='hetero')
+reg_fre1 <- feols(Time ~ Treatment, data=data[Frequency == 1], se='hetero')
+#reg_fre2 <- feols(Time ~ Treatment, data=data[Frequency == 2], se='hetero')
+#reg_fre3 <- feols(Time ~ Treatment, data=data[Frequency == 3], se='hetero')
+
+reg_fre0  %>% tidy() %>% kable(col.names = c("Predictor", "Coefficient", "SE", "T-Stat",
+"P-Value"), digits = c(0, 3, 3, 3, 3), align = 'c')
+reg_fre1  %>% tidy() %>% kable(col.names = c("Predictor", "Coefficient", "SE", "T-Stat",
+"P-Value"), digits = c(0, 3, 3, 3, 3), align = 'c')
+```
+
+
+While we want to know how experience of people have on solving sudoku influences the result of how treatment impact on people, we do a regression on different sudoku frequency, and reg_fre0 shows people never played sudoku before, reg_fre1 is rarely play. We didn't ran for those often and always play sudoku because we had only 7 values for them. As the result shown in the table, people who never played it before got less time while the treatment happened, but the result is not statistically significant. 
+
+On the other hand, regression on people who rarely play sudoku got statistically significant result. We have 41 observations and the p-value was less than 0.05. Listening to music increases their playing time among people rarely play sudoku. 
+
+
+### *Genre*
+
+```{r}
+reg8 <-feols(Time ~ Treatment, data=data[Genre == 1], se='hetero')
+reg8  %>% tidy() %>% kable(col.names = c("Predictor", "Coefficient", "SE", "T-Stat",
+"P-Value"), digits = c(0, 3, 3, 3, 3), align = 'c')
+```
+
+Since our treatment music's genre is pop, we checked whether there is any difference on time among people who prefer pop. We got 25 observations and ATE is 102. However, the result is not statistically significant, so we can't reject the null hypothesis for this regression. Therefore, listening to pop music does not affect sudoku time among participants prefer pop music.
+
+
+### *Brain Game Familiarity*
+
+```{r, warning=FALSE}
+reg9 <-feols(Time ~ Familiarity, data=data, se='hetero')
+reg9  %>% tidy() %>% kable(col.names = c("Predictor", "Coefficient", "SE", "T-Stat",
+"P-Value"), digits = c(0, 3, 3, 3, 3), align = 'c')
+reg10 <-feols(Time ~ Treatment, data=data[Familiarity == 1], se='hetero')
+reg10  %>% tidy() %>% kable(col.names = c("Predictor", "Coefficient", "SE", "T-Stat",
+"P-Value"), digits = c(0, 3, 3, 3, 3), align = 'c')
+```
+
+We conducted regression of familiarity to check whether there is any difference between those who are familiar with brain game and those who are not. People familiar with brain game solved sudoku about 8 seconds faster on average. However, the result is not statistically significant, so we can't say there is any difference between two groups.
+
+In addition, we ran regression for only those who are not familiar with brain games be We got 0.053 p-value, so we can't reject null hypothesis. Therefore, we can't identify time difference caused by listening to music among people not familiar with brain games as well.
+
+
+
+## Limitations
+
+*Excludability* 
+
+It is a challenge having limited resources. Since this is a small scale experiment, there are a few limitations in our studies. With respect to the environment, there might be potential violation of excludability. We didn't set placebo because any other sound such as white noise might also affect productivity. Instead, we asked all participants in control and treatment group to solve sudoku in a quite place to control environment. However, it is very challenging to ensure a stable and consistent environment for all the participants. If the behavior of listening to music with earphones itself worked as blocking other noises, then it can also be one thing changed between treatment and control group. In addition, the link of the game was sent out for the participants to complete but it is hard to know whether the participants followed the guidelines written in the survey strictly or not.
+
+*Non-interference* 
+
+Another limitation would be controlling or preventing spillovers. Half of the participants are acquainted with one another so there is a possibility of them communicating. To prevent interference between boston university students, we sent out survey during thanksgiving holiday and asked them not to share our experiment with others.
+
+*Intelligence* 
+
+The participants for this experiment also vary a lot in age gap so there might be differences in learning or thinking speed. It is hard to test intelligence for this matter. The last limitation also lies in the ability of solving sudoku and listening to music. People who are good at sudoku might not be affected by the music whereas people who are not familiar with the game could be distracted with music.
+
+
+
+## Conclusion
+
+In this experiment, the goal is to test people's productivity and attention span in completing a Sudoku while listening to music. The result from the first regression is that there are no differences between the participants who listened to the playlist and the ones who didn’t. One of the reasons why music does not have any impact is because it also depends on the participant’s ability to play the sudoku. If they already know how to play it well, listening to music or not will not make any difference. On the other hand, In regression 4, we found statistical significance in new players who do not listen to music when working.  They took longer to finish the sudoku when listening to the playlist. This observation was something we expected throughout our experiment with all players instead of just new ones.
+
+Going forward, we make multiple adjustments to the experiment to ensure better results. With multiple limitations in our experiment, this allows for changes to be made.   First and foremost adding more participants would ensure more accurate results.  Secondly, it may be useful just to use one group of participants like MSBA or just undergraduate students to create a more stable and equal environment.  In our list of participants, we had age ranges from 21 up to almost 60 years old.  This will also help create a more even intelligence level among all participants because they are all either a part of some graduate or undergraduate program.  
+
+
+
+
+## Bibiliography
+
+* McSpadden, K. (2015, May 14). Science: You now have a shorter attention span than a goldfish. Time. Retrieved December 8, 2021, from https://time.com/3858309/attention-spans-goldfish/. 
+Draheim, C., Hicks, K. L., & Engle, R. W. (2016)
+
+* Combining Reaction Time and Accuracy The Relationship Between Working Memory Capacity and Task Switching as a Case Example. Perspectives on Psychological Science, 11(1), 133-155. doi: 10.1177/1745691615596990
+
+* Foroughi, C. K., Werner, N. E., Nelson, E. T., & Boehm-Davis, D. A. (2014). Do interruptions affect quality of work?. Human Factors: The Journal of the Human Factors and Ergonomics Society, 56(7), 1262-1271. doi: 10.1177/0018720814531786
+
+
+
+
+
+
+
+
+
+## Appendix
+
+
+
+![ Experiment Survey Form](a.png)
+
+
+![Music (Best Pop Mix October) https://www.youtube.com/watch?v=wfFcZ6bAo9A](b.png)
+
+
+
+
+
+
+
